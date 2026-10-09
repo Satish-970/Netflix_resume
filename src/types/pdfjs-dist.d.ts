@@ -3,6 +3,11 @@ declare module 'pdfjs-dist/build/pdf' {
     str?: string;
   }
 
+  declare module 'pdfjs-dist/build/pdf.worker.entry' {
+    const worker: unknown;
+    export = worker;
+  }
+
   interface PdfPage {
     getTextContent: () => Promise<{ items: PdfTextItem[] }>;
   }

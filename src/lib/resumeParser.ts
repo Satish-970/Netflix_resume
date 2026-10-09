@@ -12,7 +12,10 @@ export async function extractResumeData(file: File): Promise<Partial<ResumeData>
 
 async function extractPdfText(file: File): Promise<string> {
   const pdfjs = await import('pdfjs-dist/build/pdf');
-  const document = await pdfjs.getDocument({ data: await file.arrayBuffer(), disableWorker: true }).promise;
+  // PDF.js 3 exposes this browser worker entry without TypeScript declarations.
+  // @ts-expect-error The worker entry registers itself on window.pdfjsWorker.
+  await import('pdfjs-dist/build/pdf.worker.entry');
+  const document = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
   const pages: string[] = [];
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
     const page = await document.getPage(pageNumber);

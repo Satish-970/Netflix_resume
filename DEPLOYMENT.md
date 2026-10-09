@@ -99,22 +99,13 @@ amplify publish
 
 ### 4. GitHub Pages (Static Export)
 
-**Note:** Requires static export configuration
+The repository includes a GitHub Actions workflow that builds and deploys the static export whenever changes are pushed to `main`.
 
-1. Update `next.config.js`:
-```javascript
-const nextConfig = {
-  output: 'export',
-  reactStrictMode: true,
-}
-module.exports = nextConfig
-```
+Before the first deployment, open the repository's **Settings → Pages** and set **Source** to **GitHub Actions**.
 
-2. Deploy:
-```bash
-npm run build
-# Push to gh-pages branch
-```
+Then push to `main` or run **Deploy to GitHub Pages** manually from the **Actions** tab. The project site will be available at:
+
+`https://satish-970.github.io/Netflix_resume/`
 
 ### 5. Docker
 

@@ -1,141 +1,85 @@
-'use client';
-
 import type { ResumeData } from '../store/portfolioStore';
 
-
 export async function extractResumeData(file: File): Promise<Partial<ResumeData>> {
-  const fileType = file.type;
-
-  if (fileType === 'application/pdf') {
-    return extractFromPDF(file);
-  } else if (
-    fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    fileType === 'application/msword'
-  ) {
-    return extractFromDOC(file);
-  } else if (fileType === 'text/plain') {
-    return extractFromText(file);
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    return parseResumeText(await extractPdfText(file));
   }
-
-  throw new Error('Unsupported file format');
+  if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
+    return parseResumeText(await file.text());
+  }
+  throw new Error('This version supports PDF and TXT resumes. Please export your DOCX as PDF and try again.');
 }
 
-async function extractFromPDF(file: File): Promise<Partial<ResumeData>> {
-  // In production, use pdf-parse or pdfjs library
-  const text = await file.text();
-  return parseResumeText(text);
-}
-
-async function extractFromDOC(file: File): Promise<Partial<ResumeData>> {
-  // In production, use mammoth or similar library
-  const text = await file.text();
-  return parseResumeText(text);
-}
-
-async function extractFromText(file: File): Promise<Partial<ResumeData>> {
-  const text = await file.text();
-  return parseResumeText(text);
+async function extractPdfText(file: File): Promise<string> {
+  const pdfjs = await import('pdfjs-dist/build/pdf');
+  const document = await pdfjs.getDocument({ data: await file.arrayBuffer(), disableWorker: true }).promise;
+  const pages: string[] = [];
+  for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+    const page = await document.getPage(pageNumber);
+    const content = await page.getTextContent();
+    pages.push(content.items.map((item) => ('str' in item ? item.str : '')).join('\n'));
+  }
+  return pages.join('\n');
 }
 
 function parseResumeText(text: string): Partial<ResumeData> {
-  // Basic parsing logic - can be enhanced with AI
-  const lines = text.split('\n').filter(line => line.trim());
-  
-  const data: Partial<ResumeData> = {
-    fullName: extractName(lines),
-    email: extractEmail(text),
-    phone: extractPhone(text),
-    headline: extractHeadline(lines),
-    summary: extractSection(text, ['summary', 'objective', 'professional summary']),
-    experience: extractExperience(text),
-    skills: extractSkills(text),
-    education: extractEducation(text),
+  const lines = text.split(/\r?\n/).map((line) => line.replace(/^[•\-*]\s*/, '').trim()).filter(Boolean);
+  const sections = getSections(text);
+  const contactText = lines.slice(0, 12).join(' ');
+  const experience = parseExperience(sections.experience);
+  const education = parseEducation(sections.education);
+  const skills = splitItems(sections.skills);
+  const projects = parseProjects(sections.projects);
+
+  return {
+    fullName: lines[0] || '',
+    email: contactText.match(/[\w.+-]+@[\w.-]+\.\w+/)?.[0] || '',
+    phone: contactText.match(/(?:\+?\d[\d\s().-]{7,}\d)/)?.[0] || '',
+    headline: lines[1] || '',
+    summary: sections.summary || '',
+    experience,
+    skills,
+    education,
+    projects,
+    socialLinks: {
+      github: contactText.match(/https?:\/\/(?:www\.)?github\.com\/\S+/i)?.[0],
+      linkedin: contactText.match(/https?:\/\/(?:www\.)?linkedin\.com\/\S+/i)?.[0],
+      portfolio: contactText.match(/https?:\/\/(?!github\.com|linkedin\.com)\S+/i)?.[0],
+    },
   };
-
-  return data;
 }
 
-function extractName(lines: string[]): string {
-  // Typically the first non-empty line is the name
-  return lines[0]?.trim() || 'Your Name';
+function getSections(text: string): Record<string, string> {
+  const headings = /(?:^|\n)\s*(summary|profile|objective|experience|work experience|employment|skills|technical skills|education|projects|portfolio)\s*:?\s*(?:\n|$)/gi;
+  const matches = [...text.matchAll(headings)];
+  const result: Record<string, string> = {};
+  matches.forEach((match, index) => {
+    const name = match[1].toLowerCase();
+    const start = (match.index || 0) + match[0].length;
+    const end = matches[index + 1]?.index || text.length;
+    const key = name.includes('summary') || name === 'profile' || name === 'objective' ? 'summary' : name.includes('experience') || name === 'employment' ? 'experience' : name.includes('skill') ? 'skills' : name === 'education' ? 'education' : 'projects';
+    result[key] = `${result[key] ? `${result[key]}\n` : ''}${text.slice(start, end).trim()}`;
+  });
+  return result;
 }
 
-function extractEmail(text: string): string {
-  const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
-  const match = text.match(emailRegex);
-  return match ? match[0] : '';
+function splitItems(value = ''): string[] {
+  return value.split(/\n|,|;/).map((item) => item.replace(/^[•\-*]\s*/, '').trim()).filter((item) => item && item.length < 80);
 }
 
-function extractPhone(text: string): string {
-  const phoneRegex = /(\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}/;
-  const match = text.match(phoneRegex);
-  return match ? match[0] : '';
+function parseExperience(value = ''): ResumeData['experience'] {
+  const lines = value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  return [{ company: lines[0] || '', position: lines[1] || '', duration: lines.find((line) => /\b(19|20)\d{2}\b/.test(line)) || '', description: lines.slice(2).join(' ') }];
 }
 
-function extractHeadline(lines: string[]): string {
-  // Look for job title patterns in first few lines
-  return lines[1]?.trim() || 'Professional';
+function parseEducation(value = ''): ResumeData['education'] {
+  const lines = value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  return [{ school: lines[0] || '', degree: lines[1] || '', field: lines[2] || '', year: lines.find((line) => /\b(19|20)\d{2}\b/.test(line)) || '' }];
 }
 
-function extractSection(text: string, keywords: string[]): string {
-  const lowerText = text.toLowerCase();
-  for (const keyword of keywords) {
-    const index = lowerText.indexOf(keyword);
-    if (index !== -1) {
-      const start = index + keyword.length;
-      const nextKeywordIndex = lowerText.indexOf('\n\n', start);
-      return text.substring(start, nextKeywordIndex || start + 500).trim();
-    }
-  }
-  return '';
-}
-
-function extractExperience(text: string): Array<{
-  company: string;
-  position: string;
-  duration: string;
-  description: string;
-}> {
-  // Basic extraction - can be enhanced
-  return [
-    {
-      company: 'Company Name',
-      position: 'Job Title',
-      duration: '2022 - Present',
-      description: 'Extract from resume',
-    },
-  ];
-}
-
-function extractSkills(text: string): string[] {
-  const skillsKeywords = ['skills', 'technical skills', 'core competencies'];
-  const lowerText = text.toLowerCase();
-  
-  for (const keyword of skillsKeywords) {
-    const index = lowerText.indexOf(keyword);
-    if (index !== -1) {
-      const section = text.substring(index, index + 500);
-      // Extract comma-separated or bullet-point skills
-      const matches = section.match(/[\w\s\+\#\-\.]+/g) || [];
-      return matches.slice(1, 11).map(s => s.trim()).filter(s => s.length > 0);
-    }
-  }
-
-  return ['JavaScript', 'React', 'TypeScript', 'Node.js', 'Full Stack Development'];
-}
-
-function extractEducation(text: string): Array<{
-  school: string;
-  degree: string;
-  field: string;
-  year: string;
-}> {
-  return [
-    {
-      school: 'University Name',
-      degree: 'Bachelor of Science',
-      field: 'Computer Science',
-      year: '2020',
-    },
-  ];
+function parseProjects(value = ''): ResumeData['projects'] {
+  const lines = value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return lines.length ? [{ title: lines[0], description: lines.slice(1).join(' '), link: '', image: '' }] : [];
 }

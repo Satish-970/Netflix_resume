@@ -93,3 +93,15 @@ body {
   background-color: #f40612;
   box-shadow: 0 8px 24px rgba(229, 9, 20, 0.4);
 }
+
+.editable-text {
+  border-radius: 4px;
+  outline: none;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.editable-text:hover,
+.editable-text:focus {
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.65);
+}

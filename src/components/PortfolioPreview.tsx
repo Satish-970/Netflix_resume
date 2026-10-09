@@ -38,44 +38,15 @@ export default function PortfolioPreview({
           className="lg:col-span-1 space-y-6"
         >
           <div className="glass-effect rounded-lg p-6 sticky top-20">
-            <h3 className="text-lg font-bold mb-4">Edit Portfolio</h3>
-
-            {/* Basic Info */}
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Full Name</label>
-                <input
-                  type="text"
-                  value={data.fullName}
-                  onChange={(e) => updateSection('fullName', e.target.value)}
-                  className="w-full bg-netflix-darker border border-netflix-lighter rounded px-3 py-2 text-white focus:border-netflix-red outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Email</label>
-                <input
-                  type="email"
-                  value={data.email}
-                  onChange={(e) => updateSection('email', e.target.value)}
-                  className="w-full bg-netflix-darker border border-netflix-lighter rounded px-3 py-2 text-white focus:border-netflix-red outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Headline</label>
-                <input
-                  type="text"
-                  value={data.headline}
-                  onChange={(e) => updateSection('headline', e.target.value)}
-                  className="w-full bg-netflix-darker border border-netflix-lighter rounded px-3 py-2 text-white focus:border-netflix-red outline-none"
-                />
-              </div>
-            </div>
-
+            <h3 className="text-lg font-bold mb-4">Edit your portfolio</h3>
+            <p className="text-gray-400 text-sm mb-6">
+              Your resume information is shown on the right. Click any highlighted text to edit it directly.
+            </p>
             <button
               onClick={handleSave}
               className="w-full button-netflix py-3 rounded font-semibold transition"
             >
-              Preview Portfolio
+              Save edits and preview
             </button>
           </div>
         </motion.div>
@@ -104,9 +75,9 @@ export default function PortfolioPreview({
                 animate={{ opacity: 1, y: 0 }}
                 className="text-5xl font-bold mb-2"
               >
-                {data.fullName}
+                <EditableText value={data.fullName} onChange={(value) => updateSection('fullName', value)} />
               </motion.h1>
-              <p className="text-xl text-gray-200 mb-4">{data.headline}</p>
+              <p className="text-xl text-gray-200 mb-4"><EditableText value={data.headline} onChange={(value) => updateSection('headline', value)} /></p>
               <div className="flex gap-4">
                 <a href={`mailto:${data.email}`} className="px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition font-semibold">
                   Contact Me
@@ -123,7 +94,7 @@ export default function PortfolioPreview({
           {/* Summary */}
           <div className="p-8 border-t border-netflix-lighter">
             <h2 className="text-2xl font-bold mb-4">About</h2>
-            <p className="text-gray-300 leading-relaxed">{data.summary}</p>
+            <EditableText value={data.summary} onChange={(value) => updateSection('summary', value)} multiline className="text-gray-300 leading-relaxed" />
           </div>
         </motion.section>
 
@@ -137,7 +108,11 @@ export default function PortfolioPreview({
                 whileHover={{ scale: 1.05 }}
                 className="glass-effect rounded-lg p-4 text-center hover:border-netflix-red border border-netflix-lighter transition"
               >
-                {skill}
+                <EditableText value={skill} onChange={(value) => {
+                  const skills = [...data.skills];
+                  skills[i] = value;
+                  updateSection('skills', skills);
+                }} />
               </motion.div>
             ))}
           </div>
@@ -155,10 +130,26 @@ export default function PortfolioPreview({
                 transition={{ delay: i * 0.1 }}
                 className="border-l-4 border-netflix-red pl-6"
               >
-                <h3 className="text-xl font-bold">{exp.position}</h3>
-                <p className="text-netflix-red">{exp.company}</p>
-                <p className="text-sm text-gray-400 mb-2">{exp.duration}</p>
-                <p className="text-gray-300">{exp.description}</p>
+                <h3 className="text-xl font-bold"><EditableText value={exp.position} onChange={(value) => {
+                  const experience = [...data.experience];
+                  experience[i] = { ...experience[i], position: value };
+                  updateSection('experience', experience);
+                }} /></h3>
+                <p className="text-netflix-red"><EditableText value={exp.company} onChange={(value) => {
+                  const experience = [...data.experience];
+                  experience[i] = { ...experience[i], company: value };
+                  updateSection('experience', experience);
+                }} /></p>
+                <p className="text-sm text-gray-400 mb-2"><EditableText value={exp.duration} onChange={(value) => {
+                  const experience = [...data.experience];
+                  experience[i] = { ...experience[i], duration: value };
+                  updateSection('experience', experience);
+                }} /></p>
+                <EditableText value={exp.description} onChange={(value) => {
+                  const experience = [...data.experience];
+                  experience[i] = { ...experience[i], description: value };
+                  updateSection('experience', experience);
+                }} className="text-gray-300" multiline />
               </motion.div>
             ))}
           </div>
@@ -181,8 +172,16 @@ export default function PortfolioPreview({
                     className="w-full h-40 object-cover"
                   />
                   <div className="p-6">
-                    <h3 className="text-lg font-bold mb-2">{project.title}</h3>
-                    <p className="text-gray-300 mb-4">{project.description}</p>
+                    <h3 className="text-lg font-bold mb-2"><EditableText value={project.title} onChange={(value) => {
+                      const projects = [...data.projects];
+                      projects[i] = { ...projects[i], title: value };
+                      updateSection('projects', projects);
+                    }} /></h3>
+                    <EditableText value={project.description} onChange={(value) => {
+                      const projects = [...data.projects];
+                      projects[i] = { ...projects[i], description: value };
+                      updateSection('projects', projects);
+                    }} className="text-gray-300 mb-4" multiline />
                     <a 
                       href={project.link}
                       target="_blank"
@@ -211,9 +210,21 @@ export default function PortfolioPreview({
                   transition={{ delay: i * 0.1 }}
                   className="border-l-4 border-netflix-red pl-6"
                 >
-                  <h3 className="text-xl font-bold">{edu.degree}</h3>
-                  <p className="text-netflix-red">{edu.school}</p>
-                  <p className="text-sm text-gray-400">{edu.field} • {edu.year}</p>
+                  <h3 className="text-xl font-bold"><EditableText value={edu.degree} onChange={(value) => {
+                    const education = [...data.education];
+                    education[i] = { ...education[i], degree: value };
+                    updateSection('education', education);
+                  }} /></h3>
+                  <p className="text-netflix-red"><EditableText value={edu.school} onChange={(value) => {
+                    const education = [...data.education];
+                    education[i] = { ...education[i], school: value };
+                    updateSection('education', education);
+                  }} /></p>
+                  <p className="text-sm text-gray-400"><EditableText value={`${edu.field}${edu.year ? ` • ${edu.year}` : ''}`} onChange={(value) => {
+                    const education = [...data.education];
+                    education[i] = { ...education[i], field: value };
+                    updateSection('education', education);
+                  }} /></p>
                 </motion.div>
               ))}
             </div>
@@ -221,5 +232,31 @@ export default function PortfolioPreview({
         )}
       </motion.div>
     </div>
+  );
+}
+
+function EditableText({ value, onChange, className = '', multiline = false }: {
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+  multiline?: boolean;
+}) {
+  return (
+    <span
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      tabIndex={0}
+      className={`editable-text ${className}`}
+      onBlur={(event) => onChange(event.currentTarget.textContent?.trim() || '')}
+      onKeyDown={(event) => {
+        if (!multiline && event.key === 'Enter') {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      }}
+    >
+      {value}
+    </span>
   );
 }

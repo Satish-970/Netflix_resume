@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import { FiUpload, FiFile } from 'react-icons/fi';
+import React, { FormEvent, useState } from 'react';
+import { FiArrowRight } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import type { ResumeData } from '../store/portfolioStore';
 
@@ -9,196 +9,183 @@ interface ResumeUploadProps {
   onResumeProcessed: (data: ResumeData) => void;
 }
 
+const initialForm = {
+  fullName: '',
+  email: '',
+  phone: '',
+  headline: '',
+  summary: '',
+  company: '',
+  position: '',
+  duration: '',
+  experienceDescription: '',
+  skills: '',
+  school: '',
+  degree: '',
+  field: '',
+  year: '',
+  projectTitle: '',
+  projectDescription: '',
+  projectLink: '',
+  github: '',
+  linkedin: '',
+  portfolio: '',
+};
+
 export default function ResumeUpload({ onResumeProcessed }: ResumeUploadProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState(initialForm);
+  const [error, setError] = useState('');
 
-  const handleFileSelect = async (file: File) => {
-    setError(null);
-    setFileName(file.name);
-    setIsLoading(true);
-
-    try {
-      // Simulate resume parsing
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const mockData: ResumeData = {
-        fullName: 'John Developer',
-        email: 'john@example.com',
-        phone: '+1 (555) 123-4567',
-        headline: 'Full Stack Developer | React & Node.js Expert',
-        summary: 'Passionate developer with 5+ years of experience building scalable web applications. Specialized in modern JavaScript frameworks and cloud technologies.',
-        experience: [
-          {
-            company: 'Tech Innovations Inc',
-            position: 'Senior Full Stack Developer',
-            duration: '2022 - Present',
-            description: 'Led development of microservices architecture serving 1M+ users. Improved performance by 40% through optimization.'
-          },
-          {
-            company: 'Digital Solutions Ltd',
-            position: 'Full Stack Developer',
-            duration: '2020 - 2022',
-            description: 'Developed and maintained multiple React and Node.js applications. Mentored junior developers.'
-          }
-        ],
-        skills: ['React', 'TypeScript', 'Node.js', 'Next.js', 'PostgreSQL', 'AWS', 'Docker', 'MongoDB'],
-        education: [
-          {
-            school: 'University of Technology',
-            degree: 'Bachelor of Science',
-            field: 'Computer Science',
-            year: '2019'
-          }
-        ],
-        projects: [
-          {
-            title: 'E-commerce Platform',
-            description: 'Full-stack e-commerce solution with payment integration',
-            link: 'https://github.com',
-            image: 'https://via.placeholder.com/300x200?text=E-commerce'
-          },
-          {
-            title: 'Task Management App',
-            description: 'Real-time collaborative task management tool',
-            link: 'https://github.com',
-            image: 'https://via.placeholder.com/300x200?text=Tasks'
-          }
-        ],
-        socialLinks: {
-          github: 'https://github.com',
-          linkedin: 'https://linkedin.com',
-          twitter: 'https://twitter.com',
-          portfolio: 'https://portfolio.com'
-        }
-      };
-
-      onResumeProcessed(mockData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process resume');
-      setIsLoading(false);
-    }
+  const update = (key: keyof typeof initialForm, value: string) => {
+    setForm((current) => ({ ...current, [key]: value }));
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
+  const inputClass =
+    'w-full bg-netflix-darker border border-netflix-lighter rounded px-3 py-2 text-white placeholder-gray-600 focus:border-netflix-red outline-none';
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFileSelect(files[0]);
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+
+    if (!form.fullName.trim() || !form.email.trim() || !form.headline.trim() || !form.summary.trim()) {
+      setError('Please complete your name, email, headline, and professional summary.');
+      return;
     }
+
+    const data: ResumeData = {
+      fullName: form.fullName.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      headline: form.headline.trim(),
+      summary: form.summary.trim(),
+      experience: form.company.trim()
+        ? [{
+            company: form.company.trim(),
+            position: form.position.trim(),
+            duration: form.duration.trim(),
+            description: form.experienceDescription.trim(),
+          }]
+        : [],
+      skills: form.skills.split(',').map((skill) => skill.trim()).filter(Boolean),
+      education: form.school.trim()
+        ? [{
+            school: form.school.trim(),
+            degree: form.degree.trim(),
+            field: form.field.trim(),
+            year: form.year.trim(),
+          }]
+        : [],
+      projects: form.projectTitle.trim()
+        ? [{
+            title: form.projectTitle.trim(),
+            description: form.projectDescription.trim(),
+            link: form.projectLink.trim(),
+            image: '',
+          }]
+        : [],
+      socialLinks: {
+        github: form.github.trim() || undefined,
+        linkedin: form.linkedin.trim() || undefined,
+        portfolio: form.portfolio.trim() || undefined,
+      },
+    };
+
+    onResumeProcessed(data);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <motion.div
+    <div className="min-h-screen px-4 py-12">
+      <motion.form
+        onSubmit={handleSubmit}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-2xl"
+        className="max-w-4xl mx-auto"
       >
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <motion.h1
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="text-5xl font-bold mb-4"
-          >
-            Build Your <span className="text-gradient">Dream Portfolio</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-xl text-gray-400 mb-8"
-          >
-            Upload your resume and transform it into a stunning Netflix-style portfolio website
-          </motion.p>
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-bold mb-4">
+            Build Your <span className="text-gradient">Portfolio</span>
+          </h1>
+          <p className="text-xl text-gray-400">
+            Tell us about yourself. We will turn your answers into a downloadable HTML portfolio.
+          </p>
         </div>
 
-        {/* Upload Area */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className="glass-effect rounded-lg border-2 border-dashed border-netflix-red/50 hover:border-netflix-red cursor-pointer transition p-12 text-center hover:bg-opacity-5"
-        >
-          <motion.div
-            animate={{ y: isLoading ? 0 : [0, -10, 0] }}
-            transition={{ repeat: isLoading ? 0 : Infinity, duration: 2 }}
-            className="mb-6"
-          >
-            <FiUpload className="mx-auto text-netflix-red text-5xl mb-4" />
-          </motion.div>
+        <div className="glass-effect rounded-lg p-6 md:p-8 space-y-8">
+          <section>
+            <h2 className="text-2xl font-bold mb-4">About you</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <Field label="Full name *" value={form.fullName} onChange={(v) => update('fullName', v)} className={inputClass} />
+              <Field label="Email *" type="email" value={form.email} onChange={(v) => update('email', v)} className={inputClass} />
+              <Field label="Phone" value={form.phone} onChange={(v) => update('phone', v)} className={inputClass} />
+              <Field label="Professional headline *" value={form.headline} onChange={(v) => update('headline', v)} className={inputClass} placeholder="e.g. Frontend Developer" />
+            </div>
+            <label className="block text-sm text-gray-400 mt-4">Professional summary *</label>
+            <textarea value={form.summary} onChange={(e) => update('summary', e.target.value)} rows={4} className={`${inputClass} mt-2`} placeholder="What do you do best? What makes your work valuable?" />
+          </section>
 
-          {!fileName ? (
-            <>
-              <h3 className="text-2xl font-semibold mb-2">Drop your resume here</h3>
-              <p className="text-gray-400 mb-2">or click to browse</p>
-              <p className="text-sm text-gray-500">Supported formats: PDF, DOCX, DOC, TXT</p>
-            </>
-          ) : (
-            <>
-              <FiFile className="mx-auto text-netflix-red text-5xl mb-4" />
-              <p className="text-lg font-semibold mb-2">{fileName}</p>
-              {isLoading && <p className="text-netflix-red animate-pulse">Processing your resume...</p>}
-            </>
-          )}
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Experience</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <Field label="Company" value={form.company} onChange={(v) => update('company', v)} className={inputClass} />
+              <Field label="Job title" value={form.position} onChange={(v) => update('position', v)} className={inputClass} />
+              <Field label="Duration" value={form.duration} onChange={(v) => update('duration', v)} className={inputClass} placeholder="2022 - Present" />
+            </div>
+            <label className="block text-sm text-gray-400 mt-4">What did you accomplish?</label>
+            <textarea value={form.experienceDescription} onChange={(e) => update('experienceDescription', e.target.value)} rows={3} className={`${inputClass} mt-2`} />
+          </section>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.docx,.doc,.txt"
-            onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
-            className="hidden"
-          />
-        </motion.div>
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Skills and education</h2>
+            <Field label="Skills (comma separated)" value={form.skills} onChange={(v) => update('skills', v)} className={inputClass} placeholder="React, TypeScript, Node.js" />
+            <div className="grid md:grid-cols-2 gap-4 mt-4">
+              <Field label="School or university" value={form.school} onChange={(v) => update('school', v)} className={inputClass} />
+              <Field label="Degree" value={form.degree} onChange={(v) => update('degree', v)} className={inputClass} />
+              <Field label="Field of study" value={form.field} onChange={(v) => update('field', v)} className={inputClass} />
+              <Field label="Graduation year" value={form.year} onChange={(v) => update('year', v)} className={inputClass} />
+            </div>
+          </section>
 
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-4 bg-red-500/20 border border-red-500 rounded text-red-400"
-          >
-            {error}
-          </motion.div>
-        )}
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Featured project</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <Field label="Project name" value={form.projectTitle} onChange={(v) => update('projectTitle', v)} className={inputClass} />
+              <Field label="Project link" type="url" value={form.projectLink} onChange={(v) => update('projectLink', v)} className={inputClass} placeholder="https://" />
+            </div>
+            <label className="block text-sm text-gray-400 mt-4">Project description</label>
+            <textarea value={form.projectDescription} onChange={(e) => update('projectDescription', e.target.value)} rows={3} className={`${inputClass} mt-2`} />
+          </section>
 
-        {/* Features */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16"
-        >
-          {[
-            { icon: '✨', title: 'AI-Powered', desc: 'Intelligent resume parsing' },
-            { icon: '🎨', title: 'Beautiful Design', desc: 'Netflix-style UI' },
-            { icon: '🚀', title: 'Fast Deploy', desc: 'One-click publishing' }
-          ].map((feature, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ scale: 1.05 }}
-              className="glass-effect rounded-lg p-6 text-center"
-            >
-              <div className="text-4xl mb-3">{feature.icon}</div>
-              <h4 className="font-semibold mb-2">{feature.title}</h4>
-              <p className="text-gray-400 text-sm">{feature.desc}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </motion.div>
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Links</h2>
+            <div className="grid md:grid-cols-3 gap-4">
+              <Field label="GitHub URL" type="url" value={form.github} onChange={(v) => update('github', v)} className={inputClass} />
+              <Field label="LinkedIn URL" type="url" value={form.linkedin} onChange={(v) => update('linkedin', v)} className={inputClass} />
+              <Field label="Personal website" type="url" value={form.portfolio} onChange={(v) => update('portfolio', v)} className={inputClass} />
+            </div>
+          </section>
+
+          {error && <p className="p-3 rounded bg-red-500/20 border border-red-500 text-red-300">{error}</p>}
+          <button type="submit" className="button-netflix w-full py-3 rounded font-semibold flex items-center justify-center gap-2">
+            Review my portfolio <FiArrowRight />
+          </button>
+        </div>
+      </motion.form>
     </div>
+  );
+}
+
+function Field({ label, value, onChange, className, type = 'text', placeholder = '' }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  className: string;
+  type?: string;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block text-sm text-gray-400">
+      {label}
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className={`${className} mt-2`} placeholder={placeholder} />
+    </label>
   );
 }

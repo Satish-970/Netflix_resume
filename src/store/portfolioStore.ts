@@ -44,9 +44,9 @@ interface PortfolioStore {
 
 export const usePortfolioStore = create<PortfolioStore>((set) => ({
   resumeData: null,
-  setResumeData: (data: any) => set({ resumeData: data }),
-  updateResumeData: (data: any) =>
-    set((state: { resumeData: any; }) => ({
+  setResumeData: (data) => set({ resumeData: data }),
+  updateResumeData: (data) =>
+    set((state) => ({
       resumeData: state.resumeData ? { ...state.resumeData, ...data } : null,
     })),
   clearResumeData: () => set({ resumeData: null }),

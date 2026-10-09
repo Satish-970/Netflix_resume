@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiEdit2, FiPlus, FiX } from 'react-icons/fi';
+import { FiDownload } from 'react-icons/fi';
 import type { ResumeData } from '../store/portfolioStore';
+import { downloadPortfolioHtml } from '../lib/exportHtml';
 
 interface PortfolioPreviewProps {
   initialData: ResumeData;
@@ -17,8 +18,6 @@ export default function PortfolioPreview({
   onComplete 
 }: PortfolioPreviewProps) {
   const [data, setData] = useState<ResumeData>(initialData);
-  const [editingSection, setEditingSection] = useState<string | null>(null);
-
   const handleSave = () => {
     if (onComplete) {
       onComplete(data);
@@ -88,6 +87,14 @@ export default function PortfolioPreview({
         animate={{ opacity: 1, x: 0 }}
         className={isPreviewMode ? 'lg:col-span-3' : 'lg:col-span-2'}
       >
+        {isPreviewMode && (
+          <button
+            onClick={() => downloadPortfolioHtml(data)}
+            className="button-netflix mb-6 px-5 py-3 rounded font-semibold flex items-center gap-2"
+          >
+            <FiDownload /> Download portfolio HTML
+          </button>
+        )}
         {/* Hero Section */}
         <motion.section className="glass-effect rounded-lg overflow-hidden mb-8">
           <div className="relative h-80 bg-gradient-to-br from-netflix-red to-netflix-lighter flex items-end p-8">

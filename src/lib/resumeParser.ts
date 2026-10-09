@@ -58,21 +58,21 @@ function getSections(text: string): Record<string, string> {
   const sections = parseDetectedSections(text);
   return sections.reduce<Record<string, string>>((result, section) => {
     const key = section.title.toLowerCase();
-    const normalized = key.includes('summary') || key === 'profile' || key === 'objective' ? 'summary' : key.includes('experience') || key === 'employment' ? 'experience' : key.includes('skill') ? 'skills' : key.includes('education') ? 'education' : key.includes('project') || key === 'portfolio' ? 'projects' : key;
+    const normalized = key.includes('summary') || key === 'about' || key === 'profile' || key === 'objective' ? 'summary' : key.includes('experience') || key === 'employment' ? 'experience' : key.includes('skill') ? 'skills' : key.includes('education') ? 'education' : key.includes('project') || key === 'portfolio' ? 'projects' : key;
     result[normalized] = section.entries.join('\n');
     return result;
   }, {});
 }
 
 function parseDetectedSections(text: string): ResumeData['sections'] {
-  const lines = text.split(/\r?\n/).map((line) => line.trim());
-  const knownHeadings = /^(summary|profile|objective|experience|work experience|employment|skills|technical skills|education|projects|portfolio|certifications|awards|languages|publications|interests|contact)$/i;
+  const lines = normalizeResumeLines(text);
+  const knownHeadings = /^(about|summary|profile|objective|experience|work experience|employment|skills|technical skills|education|projects|portfolio|certifications|awards|languages|publications|interests|contact|summer training|achievements)$/i;
   const sections: ResumeData['sections'] = [];
   let current: ResumeData['sections'][number] | undefined;
 
   lines.forEach((line, index) => {
     if (!line) return;
-    const normalized = line.replace(/:$/, '').trim();
+    const normalized = line.replace(/^#{1,6}\s*/, '').replace(/:$/, '').trim();
     const isHeading = index > 2 && (knownHeadings.test(normalized) || (/^[A-Z][A-Z &/]{2,50}$/.test(normalized) && !/[.!?]/.test(normalized)));
     if (isHeading) {
       current = { title: normalized, entries: [] };
@@ -83,6 +83,43 @@ function parseDetectedSections(text: string): ResumeData['sections'] {
   });
 
   return sections.filter((section) => section.entries.length > 0);
+}
+
+function normalizeResumeLines(text: string): string[] {
+  const rawLines = text
+    .replace(/\r/g, '')
+    .replace(/([A-Za-z])-\s*\n\s*([A-Za-z])/g, '$1$2')
+    .split('\n')
+    .map((line) => line.replace(/\s+/g, ' ').trim());
+  const lines: string[] = [];
+
+  rawLines.forEach((line) => {
+    if (!line) return;
+    const heading = line.replace(/^#{1,6}\s*/, '').replace(/:$/, '').trim();
+    const isHeading = /^(about|summary|profile|objective|experience|work experience|employment|skills|technical skills|education|projects|portfolio|certifications|awards|languages|publications|interests|contact|summer training|achievements)$/i.test(heading)
+      || (/^[A-Z][A-Z &/]{2,50}$/.test(heading) && !/[.!?]/.test(heading));
+
+    if (isHeading || !lines.length) {
+      lines.push(line);
+      return;
+    }
+
+    const previous = lines[lines.length - 1];
+    const startsNewEntry = /^[•\-*]\s/.test(line)
+      || /^(?:https?:\/\/|www\.)/i.test(line)
+      || /\b(?:19|20)\d{2}\b/.test(line)
+      || /^[A-Z][A-Za-z ]{2,45}\s+[–—-]\s+/.test(line);
+
+    if (!startsNewEntry && /[a-z,;]$/.test(previous) && /^[a-z]/.test(line)) {
+      lines[lines.length - 1] = `${previous} ${line}`;
+    } else if (!startsNewEntry && /[a-z,;:]$/.test(previous) && line.length < 90) {
+      lines[lines.length - 1] = `${previous} ${line}`;
+    } else {
+      lines.push(line);
+    }
+  });
+
+  return lines;
 }
 
 function splitItems(value = ''): string[] {

@@ -28,6 +28,17 @@ export default function PortfolioPreview({
     setData((prev: ResumeData) => ({ ...prev, [key]: value }));
   };
 
+  const updateDetectedSection = (sectionIndex: number, entryIndex: number, value: string) => {
+    const sections = data.sections.map((section, currentSectionIndex) => {
+      if (currentSectionIndex !== sectionIndex) return section;
+      const entries = section.entries.map((entry, currentEntryIndex) =>
+        currentEntryIndex === entryIndex ? value : entry
+      );
+      return { ...section, entries };
+    });
+    updateSection('sections', sections);
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Editor Panel */}
@@ -98,138 +109,32 @@ export default function PortfolioPreview({
           </div>
         </motion.section>
 
-        {/* Skills Section */}
-        <motion.section className="glass-effect rounded-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Skills</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {data.skills?.map((skill: string, i: number) => (
-              <motion.div
-                key={i}
-                whileHover={{ scale: 1.05 }}
-                className="glass-effect rounded-lg p-4 text-center hover:border-netflix-red border border-netflix-lighter transition"
-              >
-                <EditableText value={skill} onChange={(value) => {
-                  const skills = [...data.skills];
-                  skills[i] = value;
-                  updateSection('skills', skills);
-                }} />
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* Experience Section */}
-        <motion.section className="glass-effect rounded-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Experience</h2>
-          <div className="space-y-6">
-            {data.experience?.map((exp: any, i: number) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="border-l-4 border-netflix-red pl-6"
-              >
-                <h3 className="text-xl font-bold"><EditableText value={exp.position} onChange={(value) => {
-                  const experience = [...data.experience];
-                  experience[i] = { ...experience[i], position: value };
-                  updateSection('experience', experience);
-                }} /></h3>
-                <p className="text-netflix-red"><EditableText value={exp.company} onChange={(value) => {
-                  const experience = [...data.experience];
-                  experience[i] = { ...experience[i], company: value };
-                  updateSection('experience', experience);
-                }} /></p>
-                <p className="text-sm text-gray-400 mb-2"><EditableText value={exp.duration} onChange={(value) => {
-                  const experience = [...data.experience];
-                  experience[i] = { ...experience[i], duration: value };
-                  updateSection('experience', experience);
-                }} /></p>
-                <EditableText value={exp.description} onChange={(value) => {
-                  const experience = [...data.experience];
-                  experience[i] = { ...experience[i], description: value };
-                  updateSection('experience', experience);
-                }} className="text-gray-300" multiline />
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* Projects Section */}
-        {data.projects && data.projects.length > 0 && (
-          <motion.section className="glass-effect rounded-lg p-8 mb-8">
-            <h2 className="text-2xl font-bold mb-6">Projects</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {data.projects.map((project: any, i: number) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ scale: 1.05 }}
-                  className="glass-effect rounded-lg overflow-hidden hover:border-netflix-red border border-netflix-lighter transition"
-                >
-                  <img 
-                    src={project.image} 
-                    alt={project.title}
-                    className="w-full h-40 object-cover"
-                  />
-                  <div className="p-6">
-                    <h3 className="text-lg font-bold mb-2"><EditableText value={project.title} onChange={(value) => {
-                      const projects = [...data.projects];
-                      projects[i] = { ...projects[i], title: value };
-                      updateSection('projects', projects);
-                    }} /></h3>
-                    <EditableText value={project.description} onChange={(value) => {
-                      const projects = [...data.projects];
-                      projects[i] = { ...projects[i], description: value };
-                      updateSection('projects', projects);
-                    }} className="text-gray-300 mb-4" multiline />
-                    <a 
-                      href={project.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-netflix-red hover:text-netflix-red/80 transition"
-                    >
-                      View Project →
-                    </a>
-                  </div>
-                </motion.div>
+        {data.sections.map((section, sectionIndex) => (
+          <motion.section key={`${section.title}-${sectionIndex}`} className="glass-effect rounded-lg p-8 mb-8">
+            <h2 className="text-2xl font-bold mb-6">
+              <EditableText
+                value={section.title}
+                onChange={(value) => {
+                  const sections = [...data.sections];
+                  sections[sectionIndex] = { ...sections[sectionIndex], title: value };
+                  updateSection('sections', sections);
+                }}
+              />
+            </h2>
+            <div className="space-y-3">
+              {section.entries.map((entry, entryIndex) => (
+                <EditableText
+                  key={`${sectionIndex}-${entryIndex}`}
+                  value={entry}
+                  onChange={(value) => updateDetectedSection(sectionIndex, entryIndex, value)}
+                  className="block text-gray-300 leading-relaxed"
+                  multiline
+                />
               ))}
             </div>
           </motion.section>
-        )}
+        ))}
 
-        {/* Education Section */}
-        {data.education && data.education.length > 0 && (
-          <motion.section className="glass-effect rounded-lg p-8">
-            <h2 className="text-2xl font-bold mb-6">Education</h2>
-            <div className="space-y-6">
-              {data.education.map((edu: any, i: number) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="border-l-4 border-netflix-red pl-6"
-                >
-                  <h3 className="text-xl font-bold"><EditableText value={edu.degree} onChange={(value) => {
-                    const education = [...data.education];
-                    education[i] = { ...education[i], degree: value };
-                    updateSection('education', education);
-                  }} /></h3>
-                  <p className="text-netflix-red"><EditableText value={edu.school} onChange={(value) => {
-                    const education = [...data.education];
-                    education[i] = { ...education[i], school: value };
-                    updateSection('education', education);
-                  }} /></p>
-                  <p className="text-sm text-gray-400"><EditableText value={`${edu.field}${edu.year ? ` • ${edu.year}` : ''}`} onChange={(value) => {
-                    const education = [...data.education];
-                    education[i] = { ...education[i], field: value };
-                    updateSection('education', education);
-                  }} /></p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.section>
-        )}
       </motion.div>
     </div>
   );

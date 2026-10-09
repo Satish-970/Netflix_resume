@@ -33,6 +33,10 @@ export interface ResumeData {
     twitter?: string;
     portfolio?: string;
   };
+  sections: Array<{
+    title: string;
+    entries: string[];
+  }>;
 }
 
 interface PortfolioStore {

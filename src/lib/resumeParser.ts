@@ -33,6 +33,7 @@ function parseResumeText(text: string): Partial<ResumeData> {
   const education = parseEducation(sections.education);
   const skills = splitItems(sections.skills);
   const projects = parseProjects(sections.projects);
+  const detectedSections = parseDetectedSections(text);
 
   return {
     fullName: lines[0] || '',
@@ -49,21 +50,39 @@ function parseResumeText(text: string): Partial<ResumeData> {
       linkedin: contactText.match(/https?:\/\/(?:www\.)?linkedin\.com\/\S+/i)?.[0],
       portfolio: contactText.match(/https?:\/\/(?!github\.com|linkedin\.com)\S+/i)?.[0],
     },
+    sections: detectedSections,
   };
 }
 
 function getSections(text: string): Record<string, string> {
-  const headings = /(?:^|\n)\s*(summary|profile|objective|experience|work experience|employment|skills|technical skills|education|projects|portfolio)\s*:?\s*(?:\n|$)/gi;
-  const matches = [...text.matchAll(headings)];
-  const result: Record<string, string> = {};
-  matches.forEach((match, index) => {
-    const name = match[1].toLowerCase();
-    const start = (match.index || 0) + match[0].length;
-    const end = matches[index + 1]?.index || text.length;
-    const key = name.includes('summary') || name === 'profile' || name === 'objective' ? 'summary' : name.includes('experience') || name === 'employment' ? 'experience' : name.includes('skill') ? 'skills' : name === 'education' ? 'education' : 'projects';
-    result[key] = `${result[key] ? `${result[key]}\n` : ''}${text.slice(start, end).trim()}`;
+  const sections = parseDetectedSections(text);
+  return sections.reduce<Record<string, string>>((result, section) => {
+    const key = section.title.toLowerCase();
+    const normalized = key.includes('summary') || key === 'profile' || key === 'objective' ? 'summary' : key.includes('experience') || key === 'employment' ? 'experience' : key.includes('skill') ? 'skills' : key.includes('education') ? 'education' : key.includes('project') || key === 'portfolio' ? 'projects' : key;
+    result[normalized] = section.entries.join('\n');
+    return result;
+  }, {});
+}
+
+function parseDetectedSections(text: string): ResumeData['sections'] {
+  const lines = text.split(/\r?\n/).map((line) => line.trim());
+  const knownHeadings = /^(summary|profile|objective|experience|work experience|employment|skills|technical skills|education|projects|portfolio|certifications|awards|languages|publications|interests|contact)$/i;
+  const sections: ResumeData['sections'] = [];
+  let current: ResumeData['sections'][number] | undefined;
+
+  lines.forEach((line, index) => {
+    if (!line) return;
+    const normalized = line.replace(/:$/, '').trim();
+    const isHeading = index > 2 && (knownHeadings.test(normalized) || (/^[A-Z][A-Z &/]{2,50}$/.test(normalized) && !/[.!?]/.test(normalized)));
+    if (isHeading) {
+      current = { title: normalized, entries: [] };
+      sections.push(current);
+      return;
+    }
+    if (current) current.entries.push(line.replace(/^[•\-*]\s*/, '').trim());
   });
-  return result;
+
+  return sections.filter((section) => section.entries.length > 0);
 }
 
 function splitItems(value = ''): string[] {

@@ -22,16 +22,9 @@ const link = (label: string, url?: string) =>
   url && safeUrl(url) ? `<a href="${escapeHtml(safeUrl(url))}">${label}</a>` : '';
 
 export function createPortfolioHtml(data: ResumeData): string {
-  const experience = data.experience.map((item) => `
-    <article class="timeline-item"><h3>${escapeHtml(item.position)}</h3>
-    <strong>${escapeHtml(item.company)}</strong><span>${escapeHtml(item.duration)}</span>
-    <p>${escapeHtml(item.description)}</p></article>`).join('');
-  const projects = data.projects.map((item) => `
-    <article class="card"><h3>${escapeHtml(item.title)}</h3>
-    <p>${escapeHtml(item.description)}</p>${link('View project →', item.link)}</article>`).join('');
-  const education = data.education.map((item) => `
-    <article class="timeline-item"><h3>${escapeHtml(item.degree)}</h3>
-    <strong>${escapeHtml(item.school)}</strong><span>${escapeHtml(item.field)} · ${escapeHtml(item.year)}</span></article>`).join('');
+  const sections = data.sections.map((section) => `
+    <section><h2>${escapeHtml(section.title)}</h2>
+    ${section.entries.map((entry) => `<p>${escapeHtml(entry)}</p>`).join('')}</section>`).join('');
 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -47,10 +40,7 @@ h1{font-size:clamp(2.5rem,7vw,5rem);margin:0 0 8px}h2{font-size:2rem;margin-top:
 <p class="muted">${escapeHtml(data.email)}${data.phone ? ` · ${escapeHtml(data.phone)}` : ''}</p>
 <p class="links">${link('GitHub', data.socialLinks.github)}${link('LinkedIn', data.socialLinks.linkedin)}${link('Website', data.socialLinks.portfolio)}</p></header>
 <section><h2>About</h2><p>${escapeHtml(data.summary)}</p></section>
-${data.skills.length ? `<section><h2>Skills</h2><div class="skills">${data.skills.map((skill) => `<span>${escapeHtml(skill)}</span>`).join('')}</div></section>` : ''}
-${experience ? `<section><h2>Experience</h2>${experience}</section>` : ''}
-${projects ? `<section><h2>Projects</h2><div class="grid">${projects}</div></section>` : ''}
-${education ? `<section><h2>Education</h2>${education}</section>` : ''}
+${sections}
 </main></body></html>`;
 }
 

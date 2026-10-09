@@ -37,6 +37,7 @@ export default function ResumeUpload({ onResumeProcessed }: ResumeUploadProps) {
         education: extracted.education || [],
         projects: extracted.projects || [],
         socialLinks: extracted.socialLinks || {},
+        sections: extracted.sections || [],
       });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to read this resume.');
